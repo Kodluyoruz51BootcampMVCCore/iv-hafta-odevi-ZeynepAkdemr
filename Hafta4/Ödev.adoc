@@ -204,7 +204,7 @@ number = evenNumbers.First(n => n > 3); // Sonuç: 4 (3’ten büyük elemanı b
 
 ---- 
 
-== fsevsc
+== Null Check
 
 C # ' ta IsNullOrEmpty () bir dize yöntemidir. Belirtilen dizenin boş veya Boş dizenin olup olmadığını kontrol etmek için kullanılır. Bir değer atanmamışsa dize null olur. Bir dize “” veya String.Empty (Boş dizeler için sabit) olarak atanırsa boş olacaktır 
 
