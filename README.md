@@ -16,3 +16,5 @@
 * Farklı authentication bulup,aynı işleri farklı yollar ile yapanları araştırınız.
 
 * Ödev- Razor Pages/MVC Projects karşılaştırmasını yapınız.
+
+### ÖDEV
