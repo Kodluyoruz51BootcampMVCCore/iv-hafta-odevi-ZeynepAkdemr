@@ -18,3 +18,5 @@
 * Ödev- Razor Pages/MVC Projects karşılaştırmasını yapınız.
 
 ### ÖDEV
+
+Ödev kaynağını görüntülemek için [linke](https://github.com/Kodluyoruz51BootcampMVCCore/iv-hafta-odevi-ZeynepAkdemr/blob/master/Hafta4/%C3%96dev.adoc) tıklayın.
