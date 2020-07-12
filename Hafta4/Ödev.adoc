@@ -1,0 +1,371 @@
+== ViewBag Vs ViewData Vs TempData
+
+=== ViewBag
+ViewBag ASP.NET MVC3 te C# 4 ile gelen dynamic anahtar kelimesinin getirdiği bir yeniliktir. ViewData’nın dinamik(run time binding) halidir. 
+
+[source,C#]
+----
+ViewBag.SuccessMessage = "Success!"; //Controller
+
+<h2>@ViewBag.SuccessMessage</h2> //View
+
+----
+
+=== ViewData
+
+Controller sınıfları ile View sayfalları arasında ViewDataDictionary(ViewData) sınıfı ile taşınmaktadır. ViewData nesnelerine veri aktarıp, okuyabiliriz. 
+
+[source,C#]
+----
+ViewData["success"]="success" //controller;
+
+<h2>@ViewData["success"]</h2> //View
+----
+
+=== TempData
+
+Bu üç nesne arasındaki küçük ve kritik farklar vardır. Örneğin ViewBag nesnesi dynamic tipinde bir nesne olduğundan bununla alakalı hatalar compile time’da değil run time da yakalanır. Teknik anlamda ViewData nesnesinden farkı yoktur. Sözdizim olarak farklıdır.
+
+En büyük ve önemli fark TempData ile diğer ikisi arasındadır. ViewData ve ViewBag nesnesi o anki HTTP istek içerisinde geçerlidir. Yaşam döngüsü bir sonraki isteğe kadardır. Ama TempData bir alt HTTP istek içinde geçerlidir. Yaşam döngüsü o anki ve bir sonraki HTTP istek içerinde geçerlidir.
+
+[source,C#]
+----
+TempData["success"]="success" //controller;
+
+<h2>@TempData["success"]</h2> //View
+----
+
+== AddMVC Vs AddMVCCore Vs AddDateAnnotations
+
+ASP.NET Core 3.x'in üzerine MVC uygulamalarınızı önyüklemenin birkaç yolu vardır. Çerçeveyi kullanmak için yapmanız gereken bir şey, çerçeveyi denetleyicilerinizi, görünümlerinizi, sayfalarınızı gerçekten bulabileceği ve HTTP uç noktaları olarak gösterebileceği duruma başlatmaktır.
+
+Son zamanlarda bu konuda millet ile bazı görüşmeler yaptım ve bu herkes için açıkça o kadar da açık değildir. Çünkü bunu yapmanın birkaç yolu vardır, bu yüzden hızlı bir şekilde bunlardan geçelim.
+
+==== Geçmiş ve şimdiki
+'.NET Core 2.x' ve önceki sürümlerde, MVC çerçevesini ASP.NET Core bağımlılık enjeksiyon kapsayıcısına iki yolla kaydedebilirsiniz:
+
+* services.AddMvc ()
+* services.AddMvcCore ()
+
+ASP.NET Core 3.x'te, bu iki yaklaşımın yanı sıra , üç ek yol daha vardır:
+
+* services.AddControllers ()
+* services.AddControllersWithViews ()
+* services.AddRazorPages ()
+
+En “hafif” ten en “ağır siklet” e kadar aralarındaki farkları tartışalım.
+
+==== AddMvcCore ()
+AddMvcCore ()MVC uygulamasının çalışması için gereken tüm temel hizmetleri kaydeder. Hepsini listelememiz gerekmez, ancak denetleyici çağırma boru hattıyla ilgili hemen hemen her şey orada etkinleştirilir. Bunlar, yalnızca oldukça karmaşık veya olağandışı bir şey yaptığınızda (yani bir CMS oluştururken) özelleştirilen düşük (er) düzey hizmetlerdir. Bunlardan bazı örnekler: denetleyici etkinleştirme hizmetleri, MVC seçenekleri boru hattı, uygulama modeli sağlayıcı altyapısı, eylem kısıtlamaları, filtre boru hattı, model bağlayıcı altyapısı, eylem sonucu yürütücüler ve birkaç tane daha.
+
+Aynı zamanda, başlatılan çerçeve konfigürasyonu tamamen “çıplak kemiklerdir”. Gelen bir HTTP çağrısını işleyebilme açısından işlevseldir, ancak birkaç temel özelliği yoktur. Örneğin, veri açıklamaları yoluyla model doğrulaması, yetkilendirme ile aynı şekilde etkinleştirilmez.
+
+Bu kurulumda, çalışma zamanında nelerin takıldığını ve kullanıldığını kontrol edersiniz (veya eğer yapacaksanız, siz sorumlusunuz). Başka bir deyişle, en temel çerçeve özelliğinin ötesinde bir şeye ihtiyacınız varsa, onu manuel olarak eklemeniz gerekir. Aslında, .NET Core 2.x ve öncesinde, JSON desteği bile yoktu; bu şimdi değişti veSystem.Text.Json biçimlendirici aslında çağrıya zaten dahil AddMvcCore ().
+
+[source,C#]
+----
+
+// pick what you need
+services.AddMvcCore()
+    .AddDataAnnotations() // for model validation
+    .AddApiExplorer(); // for Swagger
+----
+
+=== AddMvc ()
+Sonunda, AddMvc (), tüm özelliklerin tüm mutfak lavabosunu kaydeder. Size şunları sağlar:
+
+* her şey bu AddControllersWithViews () yapar
+* her şey bu AddRazorPages () yapar
+
+[source,C#]
+----
+// ready for everything
+services.AddMvc()
+----
+Ne inşa etmeye çalıştığınızı bildiğinizi düşünürken - projenizin hangi yönde gelişeceğinden şüpheniz varsa veya bazı MVC özelliklerinin eksik olacağından korkuyorsanız (veya aslında, eksik bir özellik), arama AddMvc () bu endişeleri veya sorunları çözmek için en güvenli bahistir.
+
+==== AddDateAnnotations
+MVC uygulamasında veri tabanı tablolarını Code First yöntemi ile oluşturmaya başladığımızda yapılan validasyon işlemlerine Data Annotations denir.
+
+Asp.net mvc data'da Ek Açıklamalar özniteliği, Model verilerini doğrulamak için Model'e uygulanabilen basit bir kuraldır. 
+
+ 
+
+Veri Ek Açıklamaları doğrulama öznitelikleri kullanımı basittir, sadece bu özniteliği model sınıfı alanlarımıza uygulamalıyız ve hata mesajımızı sağlamamız gerekiyorsa, girişi doğrular ve buna göre hata mesajı verir. Bazı yaygın Veri Ek Açıklamaları doğrulaması, Aralık, Dize Uzunluğu vb. Alanları denetleme gibi zorunlu alanlardır. 
+
+== SnapShot
+
+Basit olarak açıklamak gerekirse, snapshot’ı kısa süreli çalışmalar öncesinde backup almak yerine snapshot’ı kullanabiliriz. Snapshot sayesinde sanal makinamızın anlık ekran görüntüsü alınır ve siz herhangi bir sebepten dolayı sanal makina üzerinde yaptığınız işlemleri geri almak istediğinizde almış olduğunuz snapshot’a revert diyerek eski haline geri dönüş yapabilirsiniz.
+
+Snapshot’ı sanal makinanız power off, suspend veya power on durumdayken alabilirsiniz.
+
+Snapshot eğer kontrollü bir şekilde alınır ve takip edilirse herhangi bir sorun oluşturmaz. Snapshot alındıktan sonra değişen data’lar disk üzerinde yer kapladığı için datastore’unuzu doldurabilir. Ayrıca snapshot bir chain yapısından oluştuğu için, birden fazla snapshot alınması durumunda eğer aradaki chain’lerden birtanesi silinir veya bir sebepden dolayı corrupt duruma düşerse komple sanal makinayı kaybetmeniz kuvvet ile muhtemeldir. Yani snapshot’ın aslında faydası olduğu gibi eğer takibi yapılmaz ise size zararıda olur.
+
+image::1.png[]
+
+Snapshot kısa süreli işlemler için kullanılması tavsiye ediliyor. Örneğin bir update yapacaksınız ve update 1 veya 2 hafta sürecek. Bu durumda snapshot almak çok doğru değil. Böyle bir operasyonda backup  veya clone alarak daha rahat birşekilde işlemlerinize devam edebilirsiniz. VMware’in yayınlamış olduğu Snapshot Best Practices’lerde bir snapshot’ın 24-72 saat arasında silinmesi gerektiği belirtiliyor. Eğer snapshot’ı bu süreden uzun tutarsanız hem virtual machine’in konrolunde hemde performans anlamında problemler yaşayabilirsiniz. Çünkü bir snapshot aldığınızda yeni bir vmdk dosyası oluşmaz. Değişen dataların tutulduğu bir delta vmdk dosyası oluşur. Dolayısıyla siz bir veriyi yazmak veya okumak istediğinizde bu hem vmdk üzeirnde hemde delta vmdk üzerinde işlem yapacaktır. Bu durumda da performans sorunları mutlaka ortaya çıkacaktır. Snapshot’ıda silmek istediğinizde yukarıda belirtmiş olduğum delta vmdk dosyası ile ana vmdk dosyanız birleştirilir. Eğer snapshot’ınız büyük ise veya 24-72 saatten uzun bir snapshot ise muhtemelen bu snapshot’ı silmenizde vakit alacaktır. Örneğin bir mail sunucunuz var ve üzerinde snapshot aldınız 1 hafta sonrada bunu silmek istediniz. Silme işlemini başlattıkdan sonra işlem uzun sürecektir. Bununda sebebi Mail Server üzerinde sürekli değişen dataların olmasıdır. Tabi bu süre kullanmış olduğunu disk’e görede değişkenlik gösterecektir. Yine VMware snapshot best practices’lerine göre bir sanal makine üzerinde 2 veya 3 snapshot’dan fazla bulundurmamanızı önerir. Ancak maximum desteklenen snapshot sayısı 32’dir.
+
+Özellikle database, mail server gibi sanal makinelerde uzun süreli snapshot bekletmemeye dikkat edin. Bu sunucular üzeirndeki datalar değiştiği için sizin datastore’unuzuda doldurabilir. Datastore’unuzda da yer kalmadığında bütün sanal makineleriniz down duruma geçicektir. Bunun önüne geçmek için vCenter’ınıza provision space alarm’ı tanımlayabilirsiniz.
+
+== Jquery Calender--> Datapicker --> DueAt'i takvim tipinde eklemek nasıl yapılır
+
+MVC'leri kullandığınız için JsonResult( Jsondenetleyicinin yöntemine yapılan çağrı ile döndürülür ), JSON serileştirme JavaScriptSerializersınıf tarafından işlenir . Ne yazık ki, bu belirli serileştirici DateTimeOffsetdeğerleri çok iyi işlemiyor. Onları UTC'ye normalleştirir, ardından antika bir biçimde sunar .
+
+Moment.js gerçekten bu formatı okuyabilir (ve böylece FullCalendar), normalleştirme işlemi tüm zamanların UTC olarak görüneceği anlamına gelir, böylece (örnek durumda) dört saat ileriye görünür.
+
+Buna yaklaşmanın iki yolu vardır:
+
+FullCalendar'a , saat dilimi parametresini olarak ayarlayarak kullanıcının yerel saatinin tüm zaman damgalarını ayarlamasını söyleyebilirsiniz local. Bu, arka uçta değişiklik yapılmasını gerektirmez, ancak farklı saat dilimlerindeki kullanıcıların, etkinliğin yerel saatinden ziyade kendilerine göre etkinlikleri göreceği anlamına gelir. (Yine de bu genellikle istenir, bu yüzden önce bunu düşünün.)
+
+MVC kodunuzda kullanılan serileştiriciyi yerine JSON.Net'i kullanabilirsiniz JavaScriptSerializer. Varsayılan olarak, JSON.Net standart ISO8601 biçimini kullanır ve bir DateTimeOffsetdeğerin uzaklığını korur . Bunu projeniz boyunca küresel olarak yapmak istiyorsanız, bu yaklaşıma bakın , bunun yerine LoadEventsyönteminizin son satırını şu şekilde değiştirebilirsiniz :
+
+[source,C#]
+----
+string json = JsonConvert.SerializeObject(model);
+return Content(json, "application/json");
+----
+
+Ayrıca, varsayılan olarak zaten JSON.Net kullandığından ASP.Net WebAPI'nin bu sorunu olmadığını belirtmek gerekir.
+
+== Single,SingleOrDefault ve First,FirstOrDefault Farkı
+
+LİNQ sorgularında seçim yapılırken First,FirstOrDefault, Single ve SingleOrDefault metodlarına sıklıkla başvuruyoruz. Bu metodları kullanırken doğru kullanım olmadığı takdirde sorunlar ile karşılaşabiliriz. Bu metodlar arasındaki farkı tam anlamı ile bildiğimiz takdirde bu sorunlardan kurtulmuş oluruz.
+
+==== SingleOrDefault
+
+Çift rakamları içeren int tipinde bir dizimiz olsun. Bu dizinden herhangi bir çift sayı seçilmek istendiğinde Single ve SingleOrDefault metodlarından birini kullanabiliriz.
+
+==== SingleOrDefault kullanılacaksa;
+
+Dizi içerisinden sadece bir tane çift sayı seçilmek isteniyor ve seçim şartımız sağlanmıyorsa, bu durumda int tipinin varsayılan değeri olan 0(sıfır) döndürülmesi sağlanacak ise SingleOrDefault seçimininin kullanılması gerekir.
+
+[source,C#]
+----
+int [] evenNumbers = {0,2,4,6,8}
+int number = evenNumbers.SingleOrDefault(n=> n.Equals(1));
+Console.Writeline(number);
+----
+
+Dizi içerisinde 1 değeri olmadığı için program çıktısı 0 döndürecektir. Eğer;
+
+[source,C#]
+----
+int number = evenNumbers.SingleOrDefault(n=> n>2);
+Console.Writeline(number);
+----
+
+Bu sorguda ise sonuç 2’den büyük olan birden fazla eleman vardır. Birden fazla değer döndüğü için InvalidOperationException hatası verecektir.
+
+=== Single
+
+Eğer seçimimiz sonucunda sadece bir tane eleman geleceği garanti ise bu durumda Single kullanılabilir. Eğer şart sonucunda; hiçbir eleman dönmez ise veya şartı sağlayan birden falza eleman dönerse; bu durumda hata ile karşılaşılacaktır.
+
+[source,C#]
+----
+int [] evenNumbers = {0,2,4,6,8}
+
+int number = evenNumbers.Single (n=> n.Equals(2));
+Console.Writeline(number);
+----
+
+Yukarıdaki örnekte şart sağlandığı için çıktı olarak “2” dönecektir.
+
+[source,C#]
+----
+int [] evenNumbers = {0,2,4,6,8}
+
+int number = evenNumbers.Single (n=> n.Equals(1));
+Console.Writeline(number);
+----
+
+Yukarıdaki örnekte ise 1’e eşit herhangi bir eleman olmadığı için InvalidOperationException istinası fırlatılacaktır.
+
+=== FirstOrDefault ve First
+
+==== FirstOrDefault: 
+Bu seçimde de mantık SingleOrDefault ile aynıdır. Ancak seçimde ilk eleman seçilir. Yani eğer dizide 2den büyük bir sayı seçilecekse; bu elemanda 2 den büyük “ilk” eleman seçilir.
+
+===== First: 
+Mantık Single ile aynıdır. Ancak ilk elaman seçilir.
+
+[source,C#]
+----
+int [] evenNumbers = {0,2,4,6,8}
+
+int number = 0;
+number = evenNumbers.FirstOrDefault(n => n > 8); // Sonuç: 0 ( Çünkü 8’den büyük bir eleman olmadığı için bulamadı ve ilk elemanı alamadı.)
+
+number = evenNumbers.FirstOrDefault(n => n == 2); // Sonuç: 2 ( Çünkü 2’e eşit olan elemanın buldu ve çıktıya yazdı.)
+
+number = evenNumbers.First(n => n == 4); // Sonuç: 4
+// ( Çünkü 4’e eşit olan elemanı buldu ve çıktıya yazdı.)
+
+number = evenNumbers.First(n => n > 3); // Sonuç: 4 (3’ten büyük elemanı buldu ve sıradakini yazdı.)
+
+---- 
+
+== Null Check
+
+C # ' ta IsNullOrEmpty () bir dize yöntemidir. Belirtilen dizenin boş veya Boş dizenin olup olmadığını kontrol etmek için kullanılır. Bir değer atanmamışsa dize null olur. Bir dize “” veya String.Empty (Boş dizeler için sabit) olarak atanırsa boş olacaktır 
+
+[source, C#]
+----
+public static bool IsNullOrEmpty(String str)  
+----
+
+.Açıklama: Bu yöntem, System.String türünde bir parametre alır ve bu yöntem bir boole değeri döndürür. Eğer str parametresi null veya boş dize ( “”) sonra Doğru dönmek olduğunu aksi False döndürür.
+
+Örnek::
+
+Input : str  = null
+        String.IsNullOrEmpty(str)
+Output: True
+
+Input : str  = String.Empty  
+        String.IsNullOrEmpty(str)
+Output: True
+
+.IsNullOrEmpty () Yönteminin çalıştığını göstermek için:
+
+[source, C#]
+----
+// C# program to illustrate  
+// IsNullOrEmpty() Method 
+using System; 
+class Geeks { 
+    
+    // Main Method 
+    public static void Main(string[] args) 
+    { 
+        string s1 = "GeeksforGeeks"; 
+      
+        // or declare String s2.Empty; 
+        string s2 = "";  
+  
+        string s3 = null; 
+  
+        // for String value Geeks, return true 
+        bool b1 = string.IsNullOrEmpty(s1); 
+  
+        // For String value Empty or "", return true 
+        bool b2 = string.IsNullOrEmpty(s2); 
+  
+        // For String value null, return true 
+        bool b3 = string.IsNullOrEmpty(s3); 
+  
+        Console.WriteLine(b1); 
+        Console.WriteLine(b2); 
+        Console.WriteLine(b3); 
+    } 
+}  
+----
+
+Çıktı:
+
+False 
+
+True 
+
+True
+
+== PARTIAL VIEW
+
+Bir işlemi birden fazla kez yapacaksak bir kalıp kullanırız. Öğreğin oluşturacağımız bir resim galerisini web sitesinde birden fazla sayfada kullanacağımızı düşünelim. Aynı galeriyi her sayfa için tekrar tekrar oluşturmak gereksiz ve zaman kaybıdır. Tam da burada Partial View  imdadımıza yetişiyor. Partial View kendi başına hiçbir işlevi olmayan bir yapıdır. Bulunduğu sayfa içerisinde çalışır. Asp.Net Web Forms mimarisinde ki karşılığı User Control’dür.
+
+Projemizi açınca Solution Explorer (Çözüm Gezgini) içindeki Views/Home dizinine sağ tıklayarak Add (Ekle) ve View (Görünüm) yolunu izliyoruz. Bizi aşağıdaki gibi bir ekran karşılayacaktır.
+
+image::2.png[]
+
+Daha önce view eklerken sadece view adını yazıp ekliyorduk. Burada Create as a partial view (Kısmi görünüm olarak oluştur) seçeneğini işaretliyoruz ve daha sonra Add (Ekle) butonuna basıyoruz. Karşımıza bomboş bir sayfa geliyor. Bu sayfa bağımsız bir sayfa olduğu için herhangi bir ön tanımlı bir şey karşımıza gelmedi. Ben bu sayfayı menü olarak tasarlamayı düşünüyorum. Böylece oluşturacağım her sayfada kullanabilirim.
+
+[source, HTML]
+----
+<html>
+<body>
+<div class="menu" id="menu">
+<ul>
+<li><a href="#">Ana Sayfa</a></li>
+<li><a href="#">Hakkımızda</a></li>
+<li><a href="#">Ürünlerimiz</a></li>
+<li><a href="#">İletişim</a></li>
+</ul>
+</div>
+</body>
+</html 
+----
+
+Yukarıda tasarladığımız sayfayı kaydedelim. Daha sonra Views/Home/Index.cshtml dosyasını açalım ve aşağıdaki satırı ekleyelim.
+
+[source, HTML]
+----
+@Html.Partial("~/Views/Home/PartialView.cshtml") 
+----
+
+Projemizi çalıştırdığımızda menümüzün sayfaya eklendiğini göreceksiniz. Yukarıdaki satırı projemizin neresine yapıştırırsak yapıştıralım bu menüyü eklemiş olacağız. Menü de değişiklik olduğunda sadece bir yerde yapacağımız değişiklik her yerde geçerli olacaktır.
+
+
+== API İstemcisi Doğrulama Yöntemleri
+
+link:[https://medium.com/@thejengo/api-i%CC%87stemcisi-do%C4%9Frulama-y%C3%B6ntemleri-c29e3826daea]
+
+== RAZOR PAGE VS MVC PROJECT
+
+Bir Razor sayfası , ASP.NET MVC geliştiricilerinin alışkın olduğu görünüm bileşenine çok benzer. Aynı sözdizimi ve işlevselliğe sahiptir.
+
+Temel fark, modelin ve denetleyici kodunun Razor Sayfasının içine dahil edilmesidir. Daha çok bir MVVM (Model-View-ViewModel) çerçevesi. İki yönlü veri bağlama ve izole kaygılarla daha basit bir geliştirme deneyimi sağlar.
+
+@Functions bloğunda satır içi kod kullanan bir Razor Sayfasının temel bir örneği. Aslında PageModel kodunun ayrı bir dosyaya konulması önerilir. Bu, ASP.NET WebForms ile dosyaların arkasındaki kodu nasıl yaptığımıza benziyor.
+
+[source, C#]
+----
+@page
+@model IndexModel
+@using Microsoft.AspNetCore.Mvc.RazorPages
+
+@functions {
+    public class IndexModel : PageModel
+    {
+        public string Message { get; private set; } = "In page model: ";
+
+        public void OnGet()
+        {
+            Message += $" Server seconds  { DateTime.Now.Second.ToString() }";
+        }
+    }
+}
+
+<h2>In page sample</h2>
+<p>
+    @Model.Message
+</p> 
+----
+
+Seni bilmiyorum ama ASP.NET MVC'yi ilk kez kullandığımda nasıl çalıştığını anlamaya çalışmak için çok zaman harcadım. Şeylerin isimlendirilmesi ve dinamik olarak oluşturulan rotalar, alışkın olmadığım çok fazla sihire neden oldu. / Home / HomeController.Index () işlevine “Views \ Home \ Index.cshtml” dosyasından yükleme yapılması, başlangıçta rahat olmanız için büyük bir sihirdir.
+
+Razor Pages bu “sihirden” hiçbirine sahip değil ve dosyalar daha düzenli. Bir Razor View ve WebForms gibi dosyanın arkasında bir kod var. MVC, kontrolör, görünüm ve model için farklı dizinlerde ayrı dosyalara sahip.
+
+Basit MVC ve Razor Page projelerini karşılaştırın. (Bu makalenin ilerleyen kısımlarında daha fazla kod farkı gösterecektir.)
+
+image::3.png[]
+
+Razor :: HTML Görünüm
+
+MVC :: Rest API
+
+İkisi arasındaki kod neredeyse aynı. Temel farklar şunlardır:
+
+* Razor Sayfasında “@sayfa” olması dışında, kodun MVC görünümü kısmı tamamen aynıdır.
+
+* ManagePageModel, iki MVC denetleyicisi “ManagePage” eyleminin yerini alan OnGetAsync ve OnPostAsync'e sahiptir.
+
+* ManagePageModel, daha önce ayrı PageClass'ta bulunan iki özelliğimi içeriyor.
+
+Bir HTTP POST için MVC'de, nesnenizi MVC eylemine iletirsiniz (örn. “ManagePage (int id, PageClass sayfası)”). Razor Page ile bunun yerine iki yönlü veri bağlama özelliğini kullanırsınız. Jilet Sayfaları iki yönlü veri bağlama ile düzgün çalışması için [BindProperty] ile iki özellik (PageDataID, Title) açıklama eklemek zorunda kaldı. OnPostAsync yöntemim, diğer özellikler otomatik olarak bağlandığından, kimliğin yalnızca tek bir girdisi vardır
+
+
+
+
+
+
+
+
